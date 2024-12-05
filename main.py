@@ -11,10 +11,23 @@ from util import get_secret, get_user_info
 
 app = FastAPI()
 
+
+# CORS_HEADERS = {
+#     "Access-Control-Allow-Origin": "*",
+#     "Access-Control-Allow-Methods": "*",
+#     "Access-Control-Allow-Headers": "*",
+#     "Access-Control-Max-Age": "3600",
+# }
+
+origins = [
+    "http://localhost",
+    "http://localhost:5173",
+    "https://ui-app-745799261495.us-east4.run.app",
+]
 # Allow CORS for your frontend (localhost:5173)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # React app's origin
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],  # Allow all HTTP methods (GET, POST, etc.)
     allow_headers=["*"],  # Allow all headers
@@ -46,12 +59,16 @@ def generate_jwt(username: str, email: str, expiration_minutes: int = 120) -> st
 
 
 @app.get("/exchange_token_with_google_id")
-async def exchange_token_with_google_id(request: Request, client_id: str):
+async def exchange_token_with_google_id(request: Request):
     """Given an ID_TOKEN from google login and CLIENT_ID, generate a security token
     with scopes along with user info verified by google.
     """
+    # if hasattr(request, "method") and request.method == "OPTIONS":
+    #     return CORS_HEADERS, 200
+
     try:
-        token = request.headers.get("Authorization").split()[1]
+        token = request.headers.get("google_id_token")
+        client_id = request.headers.get("client_id")
     except Exception as e:
         logger.error(e)
         return {"error": "Authorization header missing"}, 401
@@ -65,8 +82,8 @@ async def exchange_token_with_google_id(request: Request, client_id: str):
         username = idinfo['name']
     except ValueError:
         # Invalid token
-        logger.error("Invalid token")
-        return {"error": "Invalid token"}, 401
+        logger.error("Toke verification failed")
+        return {"error": "Token verification failed"}, 401
     
     # generate security token
     jwt_token = generate_jwt(username, email)
