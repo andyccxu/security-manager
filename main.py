@@ -48,6 +48,7 @@ def generate_jwt(username: str, email: str, expiration_minutes: int = 120) -> st
     payload = {
         "username": username,
         "email": email,
+        "scope": "mainfeed comment post",
         "exp": datetime.datetime.now(datetime.UTC) + datetime.timedelta(minutes=expiration_minutes),
         "iat": datetime.datetime.now(datetime.UTC),  # Issued at time
         "iss": "SecurityManager",  # Issuer
